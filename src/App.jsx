@@ -205,7 +205,7 @@ const Dashboard = () => {
   );
 };
 
-// --- SCREEN 2: DYNAMIC CHAPTER GRID (Reads from Firebase Database) ---
+// --- SCREEN 2: DYNAMIC CHAPTER GRID ---
 const ChapterGrid = () => {
   const navigate = useNavigate();
   const { examId } = useParams(); 
