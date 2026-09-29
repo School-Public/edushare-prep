@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { Settings, Search, CheckCircle2, ChevronRight, ArrowLeft, Loader2, UploadCloud, User, LogOut, LogIn, Award, Target, Zap, Clock, FileText, HelpCircle, Activity, Database, BarChart2, Plus, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Settings, Search, CheckCircle2, ChevronRight, ArrowLeft, Loader2, UploadCloud, User, LogOut, LogIn, Award, Target, Zap, BookOpen, Clock, FileText, HelpCircle, Activity, Database, BarChart2, Plus, Trash2, AlertTriangle, X } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
