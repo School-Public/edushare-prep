@@ -442,7 +442,108 @@ const PracticeArea = () => {
   );
 };
 
-// --- SCREEN 4: TRUE DATABASE-DRIVEN ADMIN DASHBOARD ---
+// --- SCREEN 4: USER PROFILE ---
+const UserProfile = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({ totalAttempted: 0, correctCount: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        try {
+          const statRef = doc(db, "user_stats", currentUser.uid);
+          const statSnap = await getDoc(statRef);
+          if (statSnap.exists()) {
+            setStats(statSnap.data());
+          }
+        } catch (err) {
+          console.error("Error fetching stats:", err);
+        }
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const accuracy = stats.totalAttempted > 0 ? Math.round((stats.correctCount / stats.totalAttempted) * 100) : 0;
+
+  if (loading) {
+    return (
+      <AnimatedBackground>
+        <Navbar />
+        <div className="flex justify-center items-center h-[80vh]">
+          <Loader2 className="animate-spin text-blue-500" size={40} />
+        </div>
+      </AnimatedBackground>
+    );
+  }
+
+  return (
+    <AnimatedBackground>
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm font-medium">
+          <ArrowLeft size={16} /> Back
+        </button>
+
+        {!user ? (
+          <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-2xl p-12 shadow-2xl text-center">
+            <User size={64} className="text-slate-600 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-white mb-4">Please sign in to view your profile</h2>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">Sign in with Google to track your practice history, accuracy rates, and overall exam readiness.</p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 shadow-2xl mb-8 flex flex-col md:flex-row items-center gap-6">
+              <div className="w-24 h-24 rounded-full bg-blue-500/10 border-2 border-blue-500/30 flex items-center justify-center text-blue-400 overflow-hidden shadow-inner shrink-0">
+                {user?.photoURL ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" /> : <User size={40} />}
+              </div>
+              <div className="text-center md:text-left flex-1">
+                <h2 className="text-2xl font-bold text-white mb-1">{user?.displayName || "EduShare Student"}</h2>
+                <p className="text-sm text-slate-400 mb-3">{user?.email}</p>
+                <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full">
+                  <Award size={14} /> JEE / NEET Aspirant
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Zap className="text-yellow-400" size={20} /> Live Analytics
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+              <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Solved</span>
+                  <BookOpen size={18} className="text-blue-400" />
+                </div>
+                <p className="text-3xl font-extrabold text-white">{stats.totalAttempted}</p>
+              </div>
+              <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Accuracy Rate</span>
+                  <Target size={18} className="text-emerald-400" />
+                </div>
+                <p className="text-3xl font-extrabold text-white">{accuracy}%</p>
+              </div>
+              <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                  <Activity size={18} className="text-purple-400" />
+                </div>
+                <p className="text-3xl font-extrabold text-white">Active</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </AnimatedBackground>
+  );
+};
+
+// --- SCREEN 5: TRUE DATABASE-DRIVEN ADMIN DASHBOARD ---
 const AdminUpload = () => {
   const navigate = useNavigate();
   const { syllabus, loadingSyllabus, updateSyllabusDb } = useSyllabus();
@@ -670,7 +771,6 @@ const AdminUpload = () => {
 
 const PaperList = () => { const navigate = useNavigate(); const {examId} = useParams(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">{examId} Past Papers Coming Soon</div></div></AnimatedBackground>};
 const PaperPracticeArea = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Mock CBT Engine Coming Soon</div></div></AnimatedBackground>};
-const UserProfile = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Profile Dashboard Coming Soon</div></div></AnimatedBackground>};
 
 export default function App() {
   return (
