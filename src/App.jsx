@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import { Settings, ChevronDown, Search, CheckCircle2, ChevronRight, ArrowLeft, Image as ImageIcon, Loader2, UploadCloud, Plus, User, LogOut, LogIn, Award, Target, Zap, BookOpen, Clock, FileText, HelpCircle } from 'lucide-react';
+import { Settings, ChevronDown, Search, CheckCircle2, ChevronRight, ArrowLeft, Image as ImageIcon, Loader2, UploadCloud, Plus, User, LogOut, LogIn, Award, Target, Zap, BookOpen, Clock, FileText, HelpCircle, Activity, Database, BarChart2 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth, googleProvider, signInWithPopup, signOut } from './firebase';
@@ -98,15 +98,15 @@ const Navbar = () => {
   );
 };
 
-// --- SCREEN 1: DASHBOARD ---
-const ExamCard = ({ title, subtitle, iconColor, shadowColor, active }) => {
+// --- SCREEN 1: ENHANCED DASHBOARD ---
+const ExamCard = ({ title, subtitle, iconBg, textColor, shadowColor, IconComponent }) => {
   const navigate = useNavigate();
   return (
     <div className={`group bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-slate-600 hover:shadow-[0_0_30px_-5px_${shadowColor}]`}>
       <div className="p-6">
         <div className="flex gap-4 items-center mb-6">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${iconColor} bg-opacity-10 transition-all duration-300 group-hover:bg-opacity-20 group-hover:scale-110`}>
-            {active ? <CheckCircle2 size={24} className={iconColor.replace('bg-', 'text-')} /> : <Search size={24} className="text-white group-hover:text-opacity-90 transition-opacity" />}
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${iconBg} transition-all duration-300 group-hover:scale-110`}>
+            <IconComponent size={24} className={textColor} />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white transition-colors group-hover:text-blue-50">{title}</h2>
@@ -123,19 +123,114 @@ const ExamCard = ({ title, subtitle, iconColor, shadowColor, active }) => {
   );
 };
 
-const Dashboard = () => (
-  <AnimatedBackground>
-    <Navbar />
-    <div className="max-w-7xl mx-auto p-4 md:p-8 mt-4">
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><span className="w-2 h-6 bg-blue-500 rounded-full inline-block"></span>Engineering & Medical Entrance Examinations</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <ExamCard title="JEE Main" subtitle="Previous Years Questions with Solutions" iconColor="bg-orange-500" shadowColor="rgba(249,115,22,0.2)" active={true} />
-        <ExamCard title="JEE Advanced" subtitle="Multi-correct & Integer Type PYQs" iconColor="bg-blue-500" shadowColor="rgba(59,130,246,0.2)" active={true} />
-        <ExamCard title="NEET (UG)" subtitle="Biology, Physics & Chemistry Core PYQs" iconColor="bg-emerald-500" shadowColor="rgba(16,185,129,0.2)" active={true} />
+const Dashboard = () => {
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AnimatedBackground>
+      <Navbar />
+      <div className="max-w-7xl mx-auto p-4 md:p-8 mt-4 space-y-12">
+        
+        {/* HERO SECTION */}
+        <div className="bg-[#1e293b]/80 backdrop-blur-md border border-slate-800 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-2xl">
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-10 -mb-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider mb-6">
+              <Zap size={14} /> Mission 2028
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
+              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">EduShare</span>
+              {user ? `, ${user.displayName?.split(' ')[0] || 'Aspirant'}!` : '!'}
+            </h1>
+            <p className="text-slate-400 text-base md:text-lg max-w-2xl mb-8 leading-relaxed">
+              Your ultimate arsenal for competitive exam preparation. Practice chapter-wise previous year questions, simulate full-length CBT mock tests, and track your performance analytics.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2 bg-[#0f172a] rounded-lg px-5 py-2.5 border border-slate-700 shadow-inner">
+                <Database size={18} className="text-emerald-400" />
+                <span className="text-sm font-semibold text-slate-300">Live PYQ Database</span>
+              </div>
+              <div className="flex items-center gap-2 bg-[#0f172a] rounded-lg px-5 py-2.5 border border-slate-700 shadow-inner">
+                <BarChart2 size={18} className="text-purple-400" />
+                <span className="text-sm font-semibold text-slate-300">Smart Analytics</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* EXAM SELECTION CARDS */}
+        <div>
+          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <span className="w-2 h-6 bg-blue-500 rounded-full inline-block"></span>
+            Select Your Target Examination
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ExamCard 
+              title="JEE Main & BITSAT" 
+              subtitle="Previous Years Questions with Solutions" 
+              iconBg="bg-orange-500/10"
+              textColor="text-orange-500" 
+              shadowColor="rgba(249,115,22,0.2)" 
+              IconComponent={Target} 
+            />
+            <ExamCard 
+              title="JEE Advanced" 
+              subtitle="Multi-correct & Integer Type PYQs" 
+              iconBg="bg-blue-500/10"
+              textColor="text-blue-500" 
+              shadowColor="rgba(59,130,246,0.2)" 
+              IconComponent={Zap} 
+            />
+            <ExamCard 
+              title="NEET (UG)" 
+              subtitle="Biology, Physics & Chemistry Core PYQs" 
+              iconBg="bg-emerald-500/10"
+              textColor="text-emerald-500" 
+              shadowColor="rgba(16,185,129,0.2)" 
+              IconComponent={Activity} 
+            />
+          </div>
+        </div>
+
+        {/* QUICK FEATURES STRIP */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 pb-12">
+          <div className="bg-[#1e293b]/50 border border-slate-800/50 rounded-xl p-5 flex items-start gap-4">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400 shrink-0"><Clock size={20} /></div>
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-1">CBT Timer Simulator</h4>
+              <p className="text-slate-500 text-xs leading-relaxed">Practice in a distraction-free exam environment with an interface identical to the actual exam.</p>
+            </div>
+          </div>
+          <div className="bg-[#1e293b]/50 border border-slate-800/50 rounded-xl p-5 flex items-start gap-4">
+            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0"><HelpCircle size={20} /></div>
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-1">Step-by-Step Solutions</h4>
+              <p className="text-slate-500 text-xs leading-relaxed">Instantly verify your answers with detailed explanations and deep concept breakdowns.</p>
+            </div>
+          </div>
+          <div className="bg-[#1e293b]/50 border border-slate-800/50 rounded-xl p-5 flex items-start gap-4">
+            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400 shrink-0"><Award size={20} /></div>
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-1">Performance Tracking</h4>
+              <p className="text-slate-500 text-xs leading-relaxed">Monitor your accuracy rate, solved PYQ count, and streak live on your profile dashboard.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div>
-  </AnimatedBackground>
-);
+    </AnimatedBackground>
+  );
+};
 
 // --- SCREEN 1.5: PAPER WISE LISTING ---
 const PaperList = () => {
@@ -561,7 +656,7 @@ const UserProfile = () => {
             <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full"><Award size={14} /> JEE / NEET Aspirant</div>
           </div>
         </div>
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Zap size={20} className="text-yellow-400" /> Live Analytics</h3>
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Zap className="text-yellow-400" size={20} /> Live Analytics</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6"><span className="text-xs font-bold text-slate-400 uppercase">Total Solved</span><p className="text-3xl font-extrabold text-white mt-2">{stats.totalAttempted}</p></div>
           <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6"><span className="text-xs font-bold text-slate-400 uppercase">Accuracy Rate</span><p className="text-3xl font-extrabold text-white mt-2">{accuracy}%</p></div>
@@ -572,7 +667,7 @@ const UserProfile = () => {
   );
 };
 
-// --- SCREEN 5: ADVANCED ADMIN DASHBOARD WITH BULLETPROOF CASCADING DROPDOWNS ---
+// --- SCREEN 5: ADVANCED ADMIN DASHBOARD WITH COMPLETE JEE/NEET SYLLABUS MAPPING ---
 const AdminUpload = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
@@ -580,6 +675,7 @@ const AdminUpload = () => {
   const [status, setStatus] = useState('');
   const [explanationText, setExplanationText] = useState('');
   
+  // Independent mapping for JEE Main, JEE Advanced, and NEET (UG)
   const examMapping = {
     'JEE Main': ['Physics', 'Chemistry', 'Mathematics'],
     'JEE Advanced': ['Physics', 'Chemistry', 'Mathematics'],
@@ -628,12 +724,10 @@ const AdminUpload = () => {
     correctOption: 'A'
   });
 
-  // Dynamically compute valid options based on current selections
   const currentSubjects = examMapping[formData.exam] || [];
   const currentChapters = Object.keys(syllabusTree[formData.subject] || {});
   const currentTopics = syllabusTree[formData.subject]?.[formData.chapter] || [];
 
-  // Cascading Handlers with safety fallbacks
   const handleExamChange = (e) => {
     const newExam = e.target.value;
     const subjects = examMapping[newExam] || [];
