@@ -4,7 +4,6 @@ import { Settings, ChevronDown, Search, CheckCircle2, ChevronRight, ArrowLeft, I
 import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth, googleProvider, signInWithPopup, signOut } from './firebase';
-import { signInWithRedirect } from 'firebase/auth'; // Make sure to add this to your imports at the top!
 
 // --- ANIMATED BACKGROUND COMPONENT ---
 const AnimatedBackground = ({ children }) => {
@@ -32,10 +31,11 @@ const Navbar = () => {
     });
     return () => unsubscribe();
   }, []);
-  
+
   const handleLogin = async () => {
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
+      setSettingsOpen(false);
     } catch (error) {
       console.error("Login failed: ", error);
     }
