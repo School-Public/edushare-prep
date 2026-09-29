@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Settings, Search, CheckCircle2, ChevronRight, ArrowLeft, Loader2, UploadCloud, User, LogOut, LogIn, Award, Target, Zap, BookOpen, Clock, FileText, HelpCircle, Activity, Database, BarChart2, Plus, Trash2 } from 'lucide-react';
-import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, updateDoc, increment, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 
@@ -29,7 +29,6 @@ const useSyllabus = () => {
         if (docSnap.exists()) {
           setSyllabus(docSnap.data().tree);
         } else {
-          // If no syllabus exists in DB, create it using the default template
           await setDoc(docRef, { tree: DEFAULT_SYLLABUS });
           setSyllabus(DEFAULT_SYLLABUS);
         }
@@ -206,7 +205,7 @@ const Dashboard = () => {
   );
 };
 
-// --- SCREEN 2: DYNAMIC CHAPTER GRID (Reads from Firebase Database) ---
+// --- SCREEN 2: DYNAMIC CHAPTER GRID ---
 const ChapterGrid = () => {
   const navigate = useNavigate();
   const { examId } = useParams(); 
@@ -269,7 +268,7 @@ const ChapterGrid = () => {
   );
 };
 
-// --- SCREEN 3: DYNAMIC PRACTICE ENGINE ---
+// --- SCREEN 3: DYNAMIC PRACTICE ENGINE (WITH ADMIN DELETE) ---
 const PracticeArea = () => {
   const navigate = useNavigate();
   const { examId, subjectId, chapterId } = useParams(); 
@@ -286,6 +285,9 @@ const PracticeArea = () => {
   
   const [currentUser, setCurrentUser] = useState(null);
   const [showSolution, setShowSolution] = useState(false);
+
+  const ADMIN_EMAIL = "adiprak1809@gmail.com";
+  const isAdmin = currentUser && (currentUser.email === ADMIN_EMAIL);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => { setCurrentUser(user); });
@@ -327,6 +329,25 @@ const PracticeArea = () => {
 
   const handleNext = () => { setIsChecked(false); setSelectedOption(null); setShowSolution(false); if (currentIndex < filteredQuestions.length - 1) setCurrentIndex(currentIndex + 1); };
 
+  const handleDeleteQuestion = async (questionId) => {
+    if (window.confirm("Are you sure you want to permanently delete this question?")) {
+      try {
+        await deleteDoc(doc(db, "questions", questionId));
+        const updatedQuestions = questions.filter(q => q.id !== questionId);
+        setQuestions(updatedQuestions);
+        setIsChecked(false);
+        setSelectedOption(null);
+        setShowSolution(false);
+        if (currentIndex >= updatedQuestions.length) {
+          setCurrentIndex(Math.max(0, updatedQuestions.length - 1));
+        }
+      } catch (error) {
+        alert("Failed to delete question.");
+        console.error(error);
+      }
+    }
+  };
+
   return (
     <AnimatedBackground>
       <Navbar />
@@ -356,7 +377,13 @@ const PracticeArea = () => {
             <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
               <div className="bg-slate-800/30 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
                 <span className="text-sm font-medium text-slate-300">Question {currentIndex + 1} of {filteredQuestions.length}</span>
-                <span className="text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-1 rounded">{currentQ.topic}</span>
+                
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-1 rounded">{currentQ.topic}</span>
+                  {isAdmin && (
+                    <button onClick={() => handleDeleteQuestion(currentQ.id)} className="text-red-400 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors border border-red-500/20 shadow-sm" title="Delete this question globally"><Trash2 size={16} /></button>
+                  )}
+                </div>
               </div>
               
               <div className="p-6">
@@ -436,7 +463,6 @@ const AdminUpload = () => {
   const [newChapterName, setNewChapterName] = useState('');
   const [newTopicName, setNewTopicName] = useState('');
 
-  // Fallback arrays to prevent breaking while loading
   const currentSubjects = syllabus ? Object.keys(syllabus[formData.exam] || {}) : [];
   const currentChapters = syllabus ? Object.keys(syllabus[formData.exam]?.[formData.subject] || {}) : [];
   const currentTopics = syllabus ? (syllabus[formData.exam]?.[formData.subject]?.[formData.chapter] || []) : [];
@@ -465,11 +491,10 @@ const AdminUpload = () => {
     setFormData({ ...formData, chapter: newChap, topic: topics[0] || '' });
   };
 
-  // --- DATABASE WRITE: Add/Delete Chapter ---
   const handleAddChapter = async (e) => {
     e.preventDefault();
     if (!newChapterName.trim() || !formData.subject) return;
-    const updatedSyllabus = JSON.parse(JSON.stringify(syllabus)); // Deep clone
+    const updatedSyllabus = JSON.parse(JSON.stringify(syllabus)); 
     if (!updatedSyllabus[formData.exam][formData.subject]) updatedSyllabus[formData.exam][formData.subject] = {};
     updatedSyllabus[formData.exam][formData.subject][newChapterName] = [];
     
@@ -483,10 +508,9 @@ const AdminUpload = () => {
     const updatedSyllabus = JSON.parse(JSON.stringify(syllabus));
     delete updatedSyllabus[formData.exam][formData.subject][formData.chapter];
     await updateSyllabusDb(updatedSyllabus);
-    handleSubjectChange({ target: { value: formData.subject }}); // Reset dropdowns
+    handleSubjectChange({ target: { value: formData.subject }});
   };
 
-  // --- DATABASE WRITE: Add/Delete Topic ---
   const handleAddTopic = async (e) => {
     e.preventDefault();
     if (!newTopicName.trim() || !formData.chapter) return;
@@ -503,7 +527,7 @@ const AdminUpload = () => {
     const updatedSyllabus = JSON.parse(JSON.stringify(syllabus));
     updatedSyllabus[formData.exam][formData.subject][formData.chapter] = updatedSyllabus[formData.exam][formData.subject][formData.chapter].filter(t => t !== formData.topic);
     await updateSyllabusDb(updatedSyllabus);
-    handleChapterChange({ target: { value: formData.chapter }}); // Reset dropdown
+    handleChapterChange({ target: { value: formData.chapter }}); 
   };
 
   const handleUpload = async (e) => {
@@ -620,7 +644,6 @@ const AdminUpload = () => {
           </form>
         </div>
 
-        {/* DATABASE MANAGERS (Writes to Firebase!) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-[#1e293b]/90 backdrop-blur-sm border border-slate-800 rounded-xl p-6 border-t-4 border-t-emerald-500">
             <h3 className="text-white font-bold mb-1 flex items-center gap-2"><Plus className="text-emerald-400" size={18} /> Add Chapter to Database</h3>
@@ -645,10 +668,9 @@ const AdminUpload = () => {
   );
 };
 
-// ... Profile & Mock Test components ...
-const UserProfile = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Profile Dashboard Coming Soon</div></div></AnimatedBackground>};
-const PaperPracticeArea = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Mock CBT Engine Coming Soon</div></div></AnimatedBackground>};
 const PaperList = () => { const navigate = useNavigate(); const {examId} = useParams(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">{examId} Past Papers Coming Soon</div></div></AnimatedBackground>};
+const PaperPracticeArea = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Mock CBT Engine Coming Soon</div></div></AnimatedBackground>};
+const UserProfile = () => { const navigate = useNavigate(); return <AnimatedBackground><Navbar/><div className="max-w-4xl mx-auto px-4 py-8"><button onClick={() => navigate(-1)} className="text-slate-400 mb-6 flex"><ArrowLeft size={16}/> Back</button><div className="text-white text-center py-20 text-xl font-bold">Profile Dashboard Coming Soon</div></div></AnimatedBackground>};
 
 export default function App() {
   return (
